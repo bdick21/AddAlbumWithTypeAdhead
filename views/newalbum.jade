@@ -1,0 +1,66 @@
+extends layout
+
+block content
+  .jumbotron
+    .container
+      h1= title    
+      body   
+        #bloodhound
+          form
+            .form-group.row
+              label.col-sm-1.form-control-label(for='inpuArtist') Artist
+              .col-sm-9
+                input#typeaheadartist.typeahead(type='text', placeholder='artist')
+
+  script.
+    var artist_list =
+    [
+      { name: "KT Tunstall",         picture: "img/kt.jpg"       },
+      { name: "Belle and Sebastian", picture: "img/belleseb.jpg" },
+      { name: "Pulp",                picture: "img/pulp.jpg"     }
+    ];
+    
+    var artists = new Bloodhound({
+      datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+      queryTokenizer: Bloodhound.tokenizers.whitespace,
+      local: artist_list
+    });
+    
+    artists.initialize();
+    
+    $('#typeaheadartist').typeahead(
+    {
+      hint: true,
+      highlight: true,
+      minLength: 1,
+    },
+    {
+      name: 'friends',
+      displayKey: 'name',
+      source: artists.ttAdapter(),
+      templates:
+      {
+        empty: 'not found', //optional
+        suggestion: function (data)
+        {
+          str = '<div> <img height=64 width=64 src="'+data.picture+'" />  <i>' +data.name + '</i></div>'
+          return str;
+        }
+      }
+    });
+      
+    // Event handler for artist field - should populate album field after selection -
+    // getting the album list from an API and populating the list for the second entry box.
+    $('.typeaheadartist').bind('typeahead:selected', function(obj, datum, name)
+    {
+      url = "http://localhost:3000/api/albumsforartist?query="+datum.value
+      $.get( url, {}, function( data )
+      {
+        albums.clear();
+        albums.local =  $.map(data.albums, function(album)
+        {
+          return { value: album };
+        });
+        albums.initialize(true);
+      }); 
+    });
